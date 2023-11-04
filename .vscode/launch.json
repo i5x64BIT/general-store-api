@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch TypeScript",
+      "skipFiles": ["<node_internals>/**"],
+      "preLaunchTask": "compile",
+      "program": "${workspaceFolder}/src/app.ts",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ]
+}
