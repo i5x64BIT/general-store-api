@@ -2,7 +2,7 @@ import express from "express";
 import dbConnection from "../../helpers/db/dbConnection.js";
 import AuthoriseError from "../Errors/AuthoriseError.js";
 import { ProductModel } from "../../models/ProductModel.js";
-import { checkUserAuthorization } from "./helpers.js";
+import { checkUserAuthorization } from "../helpers/helpers.js";
 
 const router = express.Router();
 
@@ -90,7 +90,6 @@ router.use((e, req, res, next) => {
   (async () => await dbConnection.disconnect())();
   console.log(e);
   if (e.name === "ValidationError") {
-    // Not sure of this one
     res.status(400).json({
       messege: "Bad product parameters, please check your inputs and try again",
     });

@@ -1,7 +1,10 @@
 import mongoose, { Model } from "mongoose";
 
 const SupplierSchema = new mongoose.Schema({
-  _id: mongoose.Types.ObjectId,
+  _id: {
+    type: mongoose.Types.ObjectId,
+    default: new mongoose.Types.ObjectId()
+  },
   contact: {
     type: mongoose.Types.ObjectId,
     required: true,
@@ -13,7 +16,6 @@ const SupplierSchema = new mongoose.Schema({
   description: String,
   contractStart: Date,
   contractEnd: Date,
-  contractFile: Blob
 });
 
 const SupplierModel = mongoose.model("Supplier", SupplierSchema);
