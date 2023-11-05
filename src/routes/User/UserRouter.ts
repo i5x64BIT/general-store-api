@@ -1,36 +1,18 @@
-import express, { Request, Response } from "express";
-import { ERoles, UserModel } from "../../models/UserModel.js";
+import express from "express";
+import { UserModel } from "../../models/UserModel.js";
 import dbConnection from "../../helpers/db/dbConnection.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
-import jwt, { TokenExpiredError } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import AuthoriseError from "../Errors/AuthoriseError.js";
+import AuthanticateError from "../Errors/AuthanticateError.js";
+import { checkUserAuthorization, getHashString } from "./helpers.js";
+import { createToken } from "../../helpers/auth/tokens.js";
 
 const router = express.Router();
 const UPDATEABLE_FIELDS = ["email", "passowrd", "phone_num", "address"];
 
-const getHashed = async (input: String) => {
-  const saltRounds = 10;
-  const hash = await bcrypt.hash(Buffer.from(input), saltRounds);
-  return hash.toString();
-};
-const authUser = (req, res, next) => {
-  if (req.body.token) {
-    const token = req.body.token;
-    if (jwt.verify(token, process.env.TOKEN_SECRET)) {
-      const decoded: any = jwt.decode(token);
-      const tokenUser = decoded._doc;
-      if (
-        tokenUser._id === req.params.userId ||
-        tokenUser.role === ERoles.admin
-      ) {
-        return next();
-      }
-    }
-  }
-  throw new AuthoriseError();
-};
-router.all("/users/:userId", authUser);
+router.all("/users/:userId/*", checkUserAuthorization);
 router.use((req, res, next) => {
   if (req.body) {
     if (req.body.email) {
@@ -65,7 +47,7 @@ router.get("/users/:userId", (req, res, next) => {
 router.post("/user", (req, res, next) => {
   (async () => {
     try {
-      const password = await getHashed(req.body.password);
+      const password = await getHashString(req.body.password);
 
       await dbConnection.connect();
       const user = new UserModel({
@@ -76,7 +58,10 @@ router.post("/user", (req, res, next) => {
       await user.save();
       const newUserFromDB = await UserModel.findOne({ email: req.body.email });
 
-      res.status(200).json(newUserFromDB);
+      res.status(200).json({
+        user: newUserFromDB,
+        token: createToken(newUserFromDB),
+      });
     } catch (e) {
       next(e);
     } finally {
@@ -89,18 +74,16 @@ router.post("/user/login", (req, res, next) => {
     try {
       await dbConnection.connect();
       const user = await UserModel.findOne({ email: req.body.email });
+      if (!user) throw new AuthanticateError();
       const match = bcrypt.compareSync(req.body.password, user.password);
       if (!match) {
-        res.status(401).json({
-          messege: "Wrong email or password",
-        });
-      } else {
-        const token = jwt.sign({ ...user }, process.env.TOKEN_SECRET);
-        res.status(200).json({
-          messege: "OK",
-          token,
-        });
+        throw new AuthanticateError();
       }
+      const token = createToken(user);
+      res.status(200).json({
+        messege: "OK",
+        token,
+      });
     } catch (e) {
       next(e);
     } finally {
@@ -128,7 +111,7 @@ router.put("/users/:userId", (req, res, next) => {
         { returnOriginal: false }
       );
       const user = data._doc;
-      res.status(200).json({ ...user });
+      res.status(200).json({ user, token: createToken(user) });
     } catch (e) {
       next(e);
     } finally {
@@ -139,7 +122,7 @@ router.put("/users/:userId", (req, res, next) => {
 router.delete("/users/:userId", (req, res, next) => {
   (async () => {
     try {
-      await dbConnection.connect()
+      await dbConnection.connect();
       await UserModel.deleteOne({ _id: req.params.userId });
       res.status(200).json({
         messege: "OK",
@@ -151,6 +134,64 @@ router.delete("/users/:userId", (req, res, next) => {
     }
   })();
 });
+router.get("/users/:userId/cart", (req, res, next) => {
+  (async () => {
+    try {
+      await dbConnection.connect();
+      const cart = await UserModel.findOne(
+        { _id: req.params.userId },
+        "cart"
+      ).populate("cart");
+      res.status(200).json(cart);
+    } catch (e) {
+      next(e);
+    } finally {
+      dbConnection.disconnect();
+    }
+  })();
+});
+router.put("/users/:userId/cart", (req, res, next) => {
+  (async () => {
+    try {
+      await dbConnection.connect();
+      const nUser = UserModel.findOneAndUpdate(
+        { _id: req.params.userId },
+        { cart: { $contactArrays: ["$cart", req.body.items] } },
+        { returnOriginal: false }
+      );
+      await dbConnection.disconnect();
+      res.status(200).json({
+        user: nUser,
+        token: createToken(nUser),
+      });
+    } catch (e) {
+      next(e);
+    } finally {
+      dbConnection.disconnect();
+    }
+  })();
+});
+router.delete("/users/:userId/cart", (req, res, next) => {
+  async () => {
+    try {
+      await dbConnection.connect();
+      const nUser = await UserModel.findOneAndUpdate(
+        { _id: req.params.userId },
+        { cart: [] },
+        { returnOriginal: false }
+      );
+      await dbConnection.disconnect();
+      res.status(200).json({
+        user: nUser,
+        token: createToken(nUser),
+      });
+    } catch (e) {
+      next(e);
+    } finally {
+      dbConnection.disconnect();
+    }
+  };
+});
 
 router.use((e, req, res, next) => {
   async () => await dbConnection.disconnect();
@@ -159,16 +200,25 @@ router.use((e, req, res, next) => {
     res.status(400).json({
       messege: "This email address is already occupied.",
     });
+    return;
+  }
+  if (e instanceof AuthanticateError) {
+    res.status(401).json({
+      messege: "Incorrect email or password",
+    });
+    return;
   }
   if (e instanceof AuthoriseError) {
     res.status(403).json({
       messege: "Forbidden",
     });
+    return;
   }
   if (e) {
     res.status(500).json({
       messege: "Something went wrong, try again later.",
     });
+    return;
   }
 });
 

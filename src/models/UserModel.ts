@@ -26,6 +26,7 @@ const UserSchema = new mongoose.Schema({
   cart: [
     {
       type: mongoose.Types.ObjectId,
+      ref: 'Product'
     },
   ],
   isOnMailingList: { type: Boolean, required: true, default: false },
