@@ -1,4 +1,4 @@
-import mongoose, { Model } from "mongoose";
+import mongoose from "mongoose";
 
 const ReceiptSchema = new mongoose.Schema({
   customer: { type: mongoose.Types.ObjectId, required: true },

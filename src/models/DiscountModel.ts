@@ -1,5 +1,9 @@
 import mongoose, { Model } from "mongoose";
 
+enum EDiscountType {
+  percentage = "percentage",
+  fixedPrice = "fixed",
+}
 const DiscountSchema = new mongoose.Schema({
   _id: mongoose.Types.ObjectId,
   name: {
@@ -11,7 +15,8 @@ const DiscountSchema = new mongoose.Schema({
   createdAt: { type: Date, required: true, default: Date.now() },
   updatedAt: { type: Date, required: true, default: Date.now() },
   discountType: {
-    type: Enumerator,
+    type: String,
+    enum: EDiscountType,
     required: true,
   },
   discountValue: {
@@ -21,4 +26,4 @@ const DiscountSchema = new mongoose.Schema({
 });
 
 const DiscountModel = mongoose.model("Discount", DiscountSchema);
-export { DiscountModel, DiscountSchema };
+export { DiscountModel, DiscountSchema, EDiscountType };
