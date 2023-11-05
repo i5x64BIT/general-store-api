@@ -1,7 +1,10 @@
 import mongoose, { Model } from "mongoose";
 
 const ProductSchema = new mongoose.Schema({
-  _id: mongoose.Types.ObjectId,
+  _id: {
+    type: mongoose.Types.ObjectId,
+    default: new mongoose.Types.ObjectId()
+  },
   name: {
     type: String,
     required: true,

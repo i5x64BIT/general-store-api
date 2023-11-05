@@ -194,7 +194,7 @@ router.delete("/users/:userId/cart", (req, res, next) => {
 });
 
 router.use((e, req, res, next) => {
-  async () => await dbConnection.disconnect();
+  (async () => await dbConnection.disconnect())();
   console.log(e);
   if (e.code === 11000) {
     res.status(400).json({

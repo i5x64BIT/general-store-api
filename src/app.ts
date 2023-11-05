@@ -1,6 +1,7 @@
 import express from 'express'
 import 'dotenv/config'
 import UserRouter from './routes/User/UserRouter.js'
+import ProductRouter from './routes/Product/ProductRouter.js'
 import bodyParser from 'body-parser';
 const app = express();
 
@@ -10,6 +11,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
+app.use('/api/v1', ProductRouter);
 app.use('/api/v1', UserRouter);
 
 const port = parseInt(process.env.PORT) || 8000;
