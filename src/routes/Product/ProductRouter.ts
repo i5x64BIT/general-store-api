@@ -30,9 +30,7 @@ router.get("/products", (req, res, next) => {
   })();
 });
 router.post("/product", (req, res, next) => {
-  const nProduct = new ProductModel({
-    ...req.body.product
-  });
+  const nProduct = new ProductModel(JSON.parse(req.body.product));
   (async () => {
     try {
       await dbConnection.connect();
@@ -50,7 +48,7 @@ router.put("/products/:productId", (req, res, next) => {
       await dbConnection.connect();
       const rProduct = await ProductModel.findOneAndUpdate(
         { _id: req.params.productId },
-        req.body.product,
+        JSON.parse(req.body.product),
         { returnOriginal: false }
       );
       await dbConnection.disconnect();
@@ -92,6 +90,12 @@ router.use((e, req, res, next) => {
   if (e.name === "ValidationError") {
     res.status(400).json({
       messege: "Bad product parameters, please check your inputs and try again",
+    });
+    return;
+  }
+  if (e.code === 11000) {
+    res.status(400).json({
+      messege: "An item matching those fields already exists.",
     });
     return;
   }
