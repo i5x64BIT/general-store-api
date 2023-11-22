@@ -1,66 +1,66 @@
 import express from "express";
-import { checkUserAuthorization } from "../helpers/helpers.js";
-import dbConnection from "../../helpers/db/dbConnection.js";
-import AuthoriseError from "../Errors/AuthoriseError.js";
-import { DiscountModel } from "../../models/DiscountModel.js";
+import { checkUserAuthorization } from "./helpers.js";
+import dbConnection from "../services/db/dbConnection.js";
+import { SupplierModel } from "../models/SupplierModel.js";
+import AuthoriseError from "./Errors/AuthoriseError.js";
 
 const router = express.Router();
 
-router.get("/discounts", checkUserAuthorization, (req, res, next) => {
+router.get("/suppliers", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
-      const rDiscounts = await DiscountModel.find({});
+      const rSupplier = await SupplierModel.find({});
       await dbConnection.disconnect();
-      res.status(200).json({ discounts: rDiscounts });
+      res.status(200).json({ supplier: rSupplier });
     } catch (e) {
       next(e);
     }
   })();
 });
 router.get(
-  "/discounts/:discountId",
+  "/suppliers/:supplierId",
   checkUserAuthorization,
   (req, res, next) => {
     (async () => {
       try {
         await dbConnection.connect();
-        const rDiscount = await DiscountModel.findById(req.params.discountId);
+        const rSupplier = await SupplierModel.findById(req.params.supplierId);
         await dbConnection.disconnect();
-        res.status(200).json({ discount: rDiscount });
+        res.status(200).json({ supplier: rSupplier });
       } catch (e) {
         next(e);
       }
     })();
   }
 );
-router.post("/discount", checkUserAuthorization, (req, res, next) => {
-  const nDiscount = new DiscountModel(JSON.parse(req.body.discount));
+router.post("/supplier", checkUserAuthorization, (req, res, next) => {
+  const nSupplier = new SupplierModel(JSON.parse(req.body.supplier));
   (async () => {
     try {
       await dbConnection.connect();
-      const rDiscount = await nDiscount.save();
+      const rSupplier = await nSupplier.save();
       await dbConnection.disconnect();
-      res.status(200).json({ discount: rDiscount });
+      res.status(200).json({ supplier: rSupplier });
     } catch (e) {
       next(e);
     }
   })();
 });
 router.put(
-  "/discounts/:discountId",
+  "/suppliers/:supplierId",
   checkUserAuthorization,
   (req, res, next) => {
     (async () => {
       try {
         await dbConnection.connect();
-        const rDiscount = await DiscountModel.findOneAndUpdate(
-          { _id: req.params.discountId },
-          JSON.parse(req.body.discount),
+        const rSupplier = await SupplierModel.findOneAndUpdate(
+          { _id: req.params.supplierId },
+          JSON.parse(req.body.supplier),
           { returnOriginal: false }
         );
         await dbConnection.disconnect();
-        res.status(200).json({ discount: rDiscount });
+        res.status(200).json({ supplier: rSupplier });
       } catch (e) {
         next(e);
       }
@@ -68,13 +68,13 @@ router.put(
   }
 );
 router.delete(
-  "/discounts/:discountId",
+  "/suppliers/:supplierId",
   checkUserAuthorization,
   (req, res, next) => {
     (async () => {
       try {
         await dbConnection.connect();
-        await DiscountModel.deleteOne({ _id: req.params.discountId });
+        await SupplierModel.deleteOne({ _id: req.params.supplierId });
         await dbConnection.disconnect();
         res.status(200).json({ messege: "OK" });
       } catch (e) {
@@ -92,15 +92,15 @@ router.use((e, req, res, next) => {
     });
     return;
   }
-  if (e instanceof AuthoriseError) {
-    res.status(403).json({
-      messege: "Forbidden",
-    });
-    return;
-  }
   if (e.code === 11000) {
     res.status(400).json({
       messege: "An item matching those fields already exists.",
+    });
+    return;
+  }
+  if (e instanceof AuthoriseError) {
+    res.status(403).json({
+      messege: "Forbidden",
     });
     return;
   }

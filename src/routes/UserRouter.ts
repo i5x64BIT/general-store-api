@@ -1,16 +1,22 @@
 import express from "express";
-import { UserModel } from "../../models/UserModel.js";
-import dbConnection from "../../helpers/db/dbConnection.js";
+import { UserModel } from "../models/UserModel.js";
+import dbConnection from "../services/db/dbConnection.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import AuthoriseError from "../Errors/AuthoriseError.js";
-import AuthanticateError from "../Errors/AuthanticateError.js";
-import { checkUserAuthorization, getHashString } from "./helpers.js";
-import { createToken } from "../../helpers/auth/tokens.js";
+import AuthoriseError from "./Errors/AuthoriseError.js";
+import AuthanticateError from "./Errors/AuthanticateError.js";
+import { checkUserAuthorization } from "./helpers.js";
+import { createToken } from "../services/auth/tokens.js";
 
 const router = express.Router();
 const UPDATEABLE_FIELDS = ["email", "passowrd", "phone_num", "address"];
+
+const getHashString = async (input: String) => {
+  const saltRounds = 10;
+  const hash = await bcrypt.hash(Buffer.from(input), saltRounds);
+  return hash.toString();
+};
 
 router.all("/users/:userId/*", checkUserAuthorization);
 router.use((req, res, next) => {

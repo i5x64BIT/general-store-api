@@ -1,11 +1,11 @@
 import express from "express";
 import "dotenv/config";
-import UserRouter from "./routes/User/UserRouter.js";
-import ProductRouter from "./routes/Product/ProductRouter.js";
-import SupplierRouter from "./routes/Supplier/SupplierRouter.js";
-import CategoryRouter from "./routes/Category/CategoryRouter.js";
-import DiscountRouter from "./routes/Discount/DiscountRouter.js";
-import ReceiptRouter from "./routes/Receipt/ReceiptRouter.js";
+import UserRouter from "./routes/UserRouter.js";
+import ProductRouter from "./routes/ProductRouter.js";
+import SupplierRouter from "./routes/SupplierRouter.js";
+import CategoryRouter from "./routes/CategoryRouter.js";
+import DiscountRouter from "./routes/DiscountRouter.js";
+import ReceiptRouter from "./routes/ReceiptRouter.js";
 import bodyParser from "body-parser";
 const app = express();
 

@@ -1,76 +1,72 @@
 import express from "express";
-import { checkUserAuthorization } from "../helpers/helpers.js";
-import dbConnection from "../../helpers/db/dbConnection.js";
-import AuthoriseError from "../Errors/AuthoriseError.js";
-import { CategoryModel } from "../../models/CategoryModel.js";
+import { checkUserAuthorization } from "./helpers.js";
+import dbConnection from "../services/db/dbConnection.js";
+import AuthoriseError from "./Errors/AuthoriseError.js";
+import { ReceiptModel } from "../models/ReceiptModel.js";
 
 const router = express.Router();
 
-router.get("/categories", (req, res, next) => {
+router.get("/receipts", (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
-      const rCategories = await CategoryModel.find({});
+      const rReceipt = await ReceiptModel.find({});
       await dbConnection.disconnect();
-      res.status(200).json({ categories: rCategories });
+      res.status(200).json({ receipt: rReceipt });
     } catch (e) {
       next(e);
     }
   })();
 });
-router.get("/categoreis/:categoryId", (req, res, next) => {
+router.get("/receipts/:receiptId", (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
-      const rCategory = await CategoryModel.findById(req.params.categoryId);
+      const rReceipt = await ReceiptModel.findById(req.params.receiptId);
       await dbConnection.disconnect();
-      res.status(200).json({ category: rCategory });
+      res.status(200).json({ receipt: rReceipt });
     } catch (e) {
       next(e);
     }
   })();
 });
-router.post("/category", checkUserAuthorization, (req, res, next) => {
-  const nCategory = new CategoryModel(JSON.parse(req.body.category));
+router.post("/receipt", checkUserAuthorization, (req, res, next) => {
+  const nReceipt = new ReceiptModel(JSON.parse(req.body.receipt));
   (async () => {
     try {
       await dbConnection.connect();
-      const rCategory = await nCategory.save();
+      const rReceipt = await nReceipt.save();
       await dbConnection.disconnect();
-      res.status(200).json({ category: rCategory });
+      res.status(200).json({ receipt: rReceipt });
     } catch (e) {
       next(e);
     }
   })();
 });
-router.put(
-  "/categories/:categoryId",
-  checkUserAuthorization,
-  (req, res, next) => {
-    (async () => {
-      try {
-        await dbConnection.connect();
-        const rCategory = await CategoryModel.findOneAndUpdate(
-          { _id: req.params.categoryId },
-          JSON.parse(req.body.category),
-          { returnOriginal: false }
-        );
-        await dbConnection.disconnect();
-        res.status(200).json({ category: rCategory });
-      } catch (e) {
-        next(e);
-      }
-    })();
-  }
-);
+router.put("/receipts/:receiptId", checkUserAuthorization, (req, res, next) => {
+  (async () => {
+    try {
+      await dbConnection.connect();
+      const rReceipt = await ReceiptModel.findOneAndUpdate(
+        { _id: req.params.receiptId },
+        JSON.parse(req.body.receipt),
+        { returnOriginal: false }
+      );
+      await dbConnection.disconnect();
+      res.status(200).json({ receipt: rReceipt });
+    } catch (e) {
+      next(e);
+    }
+  })();
+});
 router.delete(
-  "/categories/:categoryId",
+  "/receipts/:receiptId",
   checkUserAuthorization,
   (req, res, next) => {
     (async () => {
       try {
         await dbConnection.connect();
-        await CategoryModel.deleteOne({ _id: req.params.categoryId });
+        await ReceiptModel.deleteOne({ _id: req.params.receiptId });
         await dbConnection.disconnect();
         res.status(200).json({ messege: "OK" });
       } catch (e) {

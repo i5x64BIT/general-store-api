@@ -1,12 +1,12 @@
 import express from "express";
-import dbConnection from "../../helpers/db/dbConnection.js";
-import AuthoriseError from "../Errors/AuthoriseError.js";
-import { IProduct, ProductModel } from "../../models/ProductModel.js";
-import { checkUserAuthorization } from "../helpers/helpers.js";
+import dbConnection from "../services/db/dbConnection.js";
+import AuthoriseError from "./Errors/AuthoriseError.js";
+import { IProduct, ProductModel } from "../models/ProductModel.js";
+import { checkUserAuthorization } from "./helpers.js";
 import {
   addImagesToProduct,
   getImagesOfProduct,
-} from "../../helpers/db/awsRequests.js";
+} from "../services/db/awsRequests.js";
 
 const router = express.Router();
 
