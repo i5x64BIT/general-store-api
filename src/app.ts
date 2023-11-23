@@ -17,7 +17,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //CORS
-app.use(cors());
+app.use(
+  cors({
+    Credential: true,
+  })
+);
 
 app.use("/api/v1", ProductRouter);
 app.use("/api/v1", UserRouter);

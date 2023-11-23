@@ -5,8 +5,10 @@ import AuthoriseError from "./Errors/AuthoriseError.js";
 const checkUserAuthorization = (req, res, next) => {
   if (req.body.token) {
     const token = req.body.token;
-    if (jwt.verify(token, process.env.TOKEN_SECRET)) {
-      const decoded: any = jwt.decode(token);
+    const decoded = JSON.parse(
+      jwt.verify(token, process.env.TOKEN_SECRET).toString()
+    );
+    if (decoded) {
       const tokenUser = decoded._doc;
       if (
         tokenUser._id === req.params.userId ||

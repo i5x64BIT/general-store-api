@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import AuthoriseError from "./Errors/AuthoriseError.js";
 import AuthanticateError from "./Errors/AuthanticateError.js";
 import { checkUserAuthorization } from "./helpers.js";
-import { createToken } from "../services/auth/tokens.js";
+import { createToken, deleteToken } from "../services/auth/tokens.js";
 
 const router = express.Router();
 const UPDATEABLE_FIELDS = ["email", "passowrd", "phone_num", "address"];
@@ -18,25 +18,7 @@ const getHashString = async (input: String) => {
   return hash.toString();
 };
 
-router.all("/users/:userId/*", checkUserAuthorization);
-router.use((req, res, next) => {
-  if (req.body) {
-    if (req.body.email) {
-      switch (req.body.email) {
-        case {}:
-          throw new Error("ForbiddenQuerryError: This querry is forbidden");
-      }
-    }
-    if (req.body.password) {
-      switch (req.body.password) {
-        case {}:
-          throw new Error("ForbiddenQuerryError: This querry is forbidden");
-      }
-    }
-  }
-  next();
-});
-router.get("/users/:userId", (req, res, next) => {
+router.get("/users/:userId", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
@@ -98,7 +80,7 @@ router.post("/user/login", (req, res, next) => {
     }
   })();
 });
-router.put("/users/:userId", (req, res, next) => {
+router.put("/users/:userId", checkUserAuthorization, (req, res, next) => {
   const updateFields: any = {};
   UPDATEABLE_FIELDS.forEach((f) => {
     if (req.body[f]) {
@@ -126,7 +108,7 @@ router.put("/users/:userId", (req, res, next) => {
     }
   })();
 });
-router.delete("/users/:userId", (req, res, next) => {
+router.delete("/users/:userId", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
@@ -141,7 +123,7 @@ router.delete("/users/:userId", (req, res, next) => {
     }
   })();
 });
-router.get("/users/:userId/cart", (req, res, next) => {
+router.get("/users/:userId/cart", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
@@ -157,7 +139,7 @@ router.get("/users/:userId/cart", (req, res, next) => {
     }
   })();
 });
-router.put("/users/:userId/cart", (req, res, next) => {
+router.put("/users/:userId/cart", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
@@ -178,26 +160,69 @@ router.put("/users/:userId/cart", (req, res, next) => {
     }
   })();
 });
-router.delete("/users/:userId/cart", (req, res, next) => {
-  async () => {
-    try {
-      await dbConnection.connect();
-      const nUser = await UserModel.findOneAndUpdate(
-        { _id: req.params.userId },
-        { cart: [] },
-        { returnOriginal: false }
-      );
-      await dbConnection.disconnect();
-      res.status(200).json({
-        user: nUser,
-        token: createToken(nUser),
-      });
-    } catch (e) {
-      next(e);
-    } finally {
-      dbConnection.disconnect();
+router.delete(
+  "/users/:userId/cart",
+  checkUserAuthorization,
+  (req, res, next) => {
+    async () => {
+      try {
+        await dbConnection.connect();
+        const nUser = await UserModel.findOneAndUpdate(
+          { _id: req.params.userId },
+          { cart: [] },
+          { returnOriginal: false }
+        );
+        await dbConnection.disconnect();
+        res.status(200).json({
+          user: nUser,
+          token: createToken(nUser),
+        });
+      } catch (e) {
+        next(e);
+      } finally {
+        dbConnection.disconnect();
+      }
+    };
+  }
+);
+router.put("/user/token", (req, res, next) => {
+  try {
+    if (req.body.token) {
+      (async () => {
+        const oldToken = JSON.parse(
+          jwt.verify(req.body.token, process.env.TOKEN_SECRET).toString()
+        );
+        if (oldToken) {
+          dbConnection.connect();
+          const user = UserModel.findById(oldToken._id);
+          const newToken = createToken(user);
+          res.status(200).json({
+            token: newToken,
+          });
+        }
+      })();
     }
-  };
+  } catch (e) {
+    next(e);
+  }
+});
+router.delete("/user/token", (req, res, next) => {
+  try {
+    if (req.body.token) {
+      (async () => {
+        if (req.body.token) {
+          deleteToken(req.body.token);
+          res.status(200).json({
+            messege: "OK",
+          });
+        }
+      })();
+    } else {
+      throw new Error("Missing Token");
+    }
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.use((e, req, res, next) => {
