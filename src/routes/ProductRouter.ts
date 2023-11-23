@@ -3,10 +3,8 @@ import dbConnection from "../services/db/dbConnection.js";
 import AuthoriseError from "./Errors/AuthoriseError.js";
 import { IProduct, ProductModel } from "../models/ProductModel.js";
 import { checkUserAuthorization } from "./helpers.js";
-import {
-  addImagesToProduct,
-  getImagesOfProduct,
-} from "../services/db/awsRequests.js";
+import awsRequests from "../services/db/awsRequests.js";
+import awsConnection from "../services/db/awsConnection.js";
 
 const router = express.Router();
 
@@ -25,8 +23,15 @@ router.get("/products", (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
-      const porducts = await ProductModel.find({}).skip(offset).limit(limit);
-      res.status(200).json(porducts);
+      const productRes = await ProductModel.find({}).skip(offset).limit(limit).populate("supplier");
+      const data : any = Array.from(productRes);
+      const rProducts = [];
+      for(let p of data){
+        awsConnection.connect();
+        const images = await awsRequests.getImagesOfProduct(p._id)
+        rProducts.push({...p._doc, images })
+      }
+      res.status(200).json(rProducts);
       await dbConnection.disconnect();
     } catch (e) {
       next(e);
@@ -96,7 +101,7 @@ router.get("/products/:productId", (req, res, next) => {
 router.get("/products/:productId/images", (req, res, next) => {
   (async () => {
     try {
-      const urls = await getImagesOfProduct(req.params.productId);
+      const urls = await awsRequests.getImagesOfProduct(req.params.productId);
       res.status(200).json(urls);
     } catch (e) {
       next(e);
@@ -110,7 +115,7 @@ router.post(
     const product: IRequestProduct = req.body.product;
     (async () => {
       try {
-        await addImagesToProduct(product._id, product.images, req.body.token);
+        await awsRequests.addImagesToProduct(product._id, product.images, req.body.token);
         res.status(200).json({ messege: "OK" });
       } catch (e) {
         next(e);

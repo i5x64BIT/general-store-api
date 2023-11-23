@@ -7,6 +7,7 @@ import CategoryRouter from "./routes/CategoryRouter.js";
 import DiscountRouter from "./routes/DiscountRouter.js";
 import ReceiptRouter from "./routes/ReceiptRouter.js";
 import bodyParser from "body-parser";
+import cors from "cors";
 const app = express();
 
 // parse application/x-www-form-urlencoded
@@ -14,6 +15,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // parse application/json
 app.use(bodyParser.json());
+
+//CORS
+app.use(cors());
 
 app.use("/api/v1", ProductRouter);
 app.use("/api/v1", UserRouter);

@@ -89,6 +89,7 @@ router.post("/user/login", (req, res, next) => {
       res.status(200).json({
         messege: "OK",
         token,
+        user: JSON.stringify(user.toJSON()),
       });
     } catch (e) {
       next(e);

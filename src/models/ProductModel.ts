@@ -22,11 +22,12 @@ const ProductSchema = new mongoose.Schema({
   description: String,
   supplier: {
     type: mongoose.Types.ObjectId,
+    ref: "Supplier",
     required: true,
   },
   tags: [{ type: String }],
   basePrice: { type: Number, required: true },
-  activeDiscounts: [{ type: mongoose.Types.ObjectId }],
+  activeDiscounts: [{ type: mongoose.Types.ObjectId, ref: "Discount" }],
 });
 
 const ProductModel = mongoose.model<IProduct>("Product", ProductSchema);

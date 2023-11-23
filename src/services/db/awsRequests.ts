@@ -24,17 +24,21 @@ const getImagesOfProduct = async (
   let urls: string[] = [];
   const res = await client.send(listCommand);
 
-  for (let item of res.Contents) {
-    const command = new GetObjectCommand({
-      Bucket: BUCKET,
-      Key: item.Key,
-    });
-    const url = await getSignedUrl(client, command, {
-      expiresIn: 300,
-    });
-    urls.push(url);
+  if(res.Contents){
+    for (let item of res.Contents) {
+      const command = new GetObjectCommand({
+        Bucket: BUCKET,
+        Key: item.Key,
+      });
+      const url = await getSignedUrl(client, command, {
+        expiresIn: 300,
+      });
+      urls.push(url);
+    }
+    return urls;
+  } else {
+    return -1;
   }
-  return urls;
 };
 const addImagesToProduct = async (
   productId: mongoose.Types.ObjectId | string,
@@ -67,4 +71,4 @@ const addImagesToProduct = async (
   });
 };
 
-export { getImagesOfProduct, addImagesToProduct };
+export default { getImagesOfProduct, addImagesToProduct };
