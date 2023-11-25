@@ -3,16 +3,15 @@ import { checkUserAuthorization } from "./helpers.js";
 import dbConnection from "../services/db/dbConnection.js";
 import { SupplierModel } from "../models/SupplierModel.js";
 import AuthoriseError from "./Errors/AuthoriseError.js";
-
+import jwt from 'jsonwebtoken';
 const router = express.Router();
 
-router.get("/suppliers", checkUserAuthorization, (req, res, next) => {
+router.put("/suppliers", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
-      const rSupplier = await SupplierModel.find({});
-      await dbConnection.disconnect();
-      res.status(200).json({ supplier: rSupplier });
+      const rSuppliers = await SupplierModel.find({});
+      res.status(200).json({ suppliers: rSuppliers });
     } catch (e) {
       next(e);
     }
@@ -86,6 +85,11 @@ router.delete(
 router.use((e, req, res, next) => {
   (async () => await dbConnection.disconnect())();
   console.log(e);
+  if(e instanceof jwt.TokenExpiredError){
+    res.status(401).json({
+      messege: "Token Expired"
+    })
+  }
   if (e.name === "ValidationError") {
     res.status(400).json({
       messege: "Bad product parameters, please check your inputs and try again",

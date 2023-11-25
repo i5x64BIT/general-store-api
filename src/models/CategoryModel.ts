@@ -1,7 +1,6 @@
 import mongoose, { Model } from "mongoose";
 
 const CategorySchema = new mongoose.Schema({
-  _id: mongoose.Types.ObjectId,
   name: {
     type: String,
     required: true,

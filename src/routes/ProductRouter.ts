@@ -26,20 +26,20 @@ router.get("/products", (req, res, next) => {
       const productRes = await ProductModel.find({}).skip(offset).limit(limit).populate("supplier");
       const data : any = Array.from(productRes);
       const rProducts = [];
+      await awsConnection.connect();
       for(let p of data){
-        awsConnection.connect();
         const images = await awsRequests.getImagesOfProduct(p._id)
         rProducts.push({...p._doc, images })
       }
-      res.status(200).json(rProducts);
       await dbConnection.disconnect();
+      res.status(200).json(rProducts);
     } catch (e) {
       next(e);
     }
   })();
 });
 router.post("/product", checkUserAuthorization, (req, res, next) => {
-  const product: IRequestProduct = JSON.parse(req.body.product);
+  const product: IRequestProduct = req.body.product;
   const nProduct = new ProductModel(product);
   (async () => {
     try {

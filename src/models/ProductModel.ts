@@ -8,13 +8,10 @@ interface IProduct {
   tags: string[];
   basePrice: number;
   activeDiscounts: mongoose.Types.ObjectId;
+  isEnabled: boolean;
 }
 
 const ProductSchema = new mongoose.Schema({
-  _id: {
-    type: mongoose.Types.ObjectId,
-    default: new mongoose.Types.ObjectId(),
-  },
   name: {
     type: String,
     required: true,
@@ -28,6 +25,11 @@ const ProductSchema = new mongoose.Schema({
   tags: [{ type: String }],
   basePrice: { type: Number, required: true },
   activeDiscounts: [{ type: mongoose.Types.ObjectId, ref: "Discount" }],
+  isEnabled: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
 });
 
 const ProductModel = mongoose.model<IProduct>("Product", ProductSchema);

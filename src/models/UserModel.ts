@@ -19,7 +19,6 @@ interface IUser {
 }
 
 const UserSchema = new mongoose.Schema({
-  _id: mongoose.Types.ObjectId,
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, required: true, default: ERoles.user, enum: ERoles },
