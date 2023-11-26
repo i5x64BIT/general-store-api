@@ -6,7 +6,7 @@ import AuthoriseError from "./Errors/AuthoriseError.js";
 import jwt from 'jsonwebtoken';
 const router = express.Router();
 
-router.put("/suppliers", checkUserAuthorization, (req, res, next) => {
+router.get("/suppliers", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();

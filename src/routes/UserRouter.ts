@@ -57,7 +57,7 @@ router.post("/user", (req, res, next) => {
     }
   })();
 });
-router.post("/user/login", (req, res, next) => {
+router.put("/user/login", (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
