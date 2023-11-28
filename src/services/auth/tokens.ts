@@ -9,7 +9,6 @@ const blacklist = [];
  */
 const createToken = (payload: any, timeout = 900) => {
   const options: jwt.SignOptions = { algorithm: "HS256", expiresIn: "15m" };
-  console.log(payload);
   const token = jwt.sign({ ...payload }, secret, options);
   return token;
 };

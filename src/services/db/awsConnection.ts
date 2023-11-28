@@ -20,10 +20,12 @@ const connect: (token?: string) => Promise<S3Client> = async (token?) => {
   let arn = EArnBasedOnRole.user;
 
   if (token) {
-    const payload = Jwt.verify(token, process.env.TOKEN_SECRET).toString();
+    const payload = Jwt.verify(token, process.env.TOKEN_SECRET);
     if (!payload) throw new Error("No access");
-    const user: IUser = JSON.parse(payload);
-    if (user.role === ERoles.admin) arn = EArnBasedOnRole.admin;
+    if (payload && typeof payload !== "string") {
+      const user = payload._doc as IUser;
+      if (user.role === ERoles.admin) arn = EArnBasedOnRole.admin;
+    }
   }
   const command = new AssumeRoleCommand({
     RoleArn: arn,

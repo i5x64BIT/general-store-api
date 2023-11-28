@@ -7,6 +7,7 @@ import {
 import awsConnection from "./awsConnection.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import mongoose from "mongoose";
+import { Multer } from "multer";
 
 const BUCKET = "generalstore.com";
 const PRODUCT_PATH = "products/";
@@ -24,7 +25,7 @@ const getImagesOfProduct = async (
   let urls: string[] = [];
   const res = await client.send(listCommand);
 
-  if(res.Contents){
+  if (res.Contents) {
     for (let item of res.Contents) {
       const command = new GetObjectCommand({
         Bucket: BUCKET,
@@ -36,32 +37,38 @@ const getImagesOfProduct = async (
       urls.push(url);
     }
     return urls;
-  } else {
-    return -1;
   }
 };
 const addImagesToProduct = async (
   productId: mongoose.Types.ObjectId | string,
-  images: Buffer[],
+  images: Express.Multer.File[],
   token: string
 ) => {
   const client = await awsConnection.connect(token);
-  const allImages = await client.send(
+  const res = await client.send(
     new ListObjectsCommand({
       Bucket: BUCKET,
       Prefix: PRODUCT_PATH + productId + "/",
       Delimiter: "/",
     })
   );
-  const lastItemPathArray: string[] = allImages[length - 1].Key.split("/");
-  const itemName = lastItemPathArray[lastItemPathArray.length - 1];
+  const allImages = res.Contents;
+  let itemName = "0";
+  if (res.Contents) {
+    const lastItemPathArray: string[] =
+      allImages[allImages.length - 1].Key.split("/");
+    itemName = lastItemPathArray[lastItemPathArray.length - 1].toString();
+  }
   let insertIndex = parseInt(itemName.split(".")[0]); // Last item is calulated by name, to not overwrite items
-  let promiseArray: Promise<PutObjectCommandOutput | void>[];
+  let promiseArray: Promise<PutObjectCommandOutput | void>[] = [];
   for (let i of images) {
+    awsConnection.connect(token);
+    const type = i.originalname.split(".")[1];
     const command = new PutObjectCommand({
       Bucket: BUCKET,
-      Body: i,
-      Key: PRODUCT_PATH + insertIndex.toString(),
+      Body: i.buffer,
+      Key: PRODUCT_PATH + productId + "/" + insertIndex.toString() + "." + type,
+      ContentType: i.mimetype,
     });
     insertIndex++;
     promiseArray.push(client.send(command)); // Not using await to not block event loop

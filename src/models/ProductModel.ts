@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 interface IProduct {
   _id: mongoose.Types.ObjectId;
+  images?: Buffer[];
   name: string;
   description: string;
   supplier: mongoose.Types.ObjectId;

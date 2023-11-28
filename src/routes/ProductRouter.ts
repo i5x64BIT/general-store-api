@@ -4,13 +4,11 @@ import AuthoriseError from "./Errors/AuthoriseError.js";
 import { IProduct, ProductModel } from "../models/ProductModel.js";
 import { checkUserAuthorization } from "./helpers.js";
 import awsRequests from "../services/db/awsRequests.js";
-import awsConnection from "../services/db/awsConnection.js";
+import multer from "multer";
 
+const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
-interface IRequestProduct extends IProduct {
-  images?: Buffer[];
-}
 router.get("/products", (req, res, next) => {
   const offset: any = req.query.offset || 0;
   let limit: any = req.query.limit || 25;
@@ -23,13 +21,15 @@ router.get("/products", (req, res, next) => {
   (async () => {
     try {
       await dbConnection.connect();
-      const productRes = await ProductModel.find({}).skip(offset).limit(limit).populate("supplier");
-      const data : any = Array.from(productRes);
+      const productRes = await ProductModel.find({})
+        .skip(offset)
+        .limit(limit)
+        .populate("supplier");
+      const data: any = Array.from(productRes);
       const rProducts = [];
-      await awsConnection.connect();
-      for(let p of data){
-        const images = await awsRequests.getImagesOfProduct(p._id)
-        rProducts.push({...p._doc, images })
+      for (let p of data) {
+        const images = await awsRequests.getImagesOfProduct(p._id);
+        rProducts.push({ ...p._doc, images });
       }
       await dbConnection.disconnect();
       res.status(200).json(rProducts);
@@ -38,20 +38,31 @@ router.get("/products", (req, res, next) => {
     }
   })();
 });
-router.post("/product", checkUserAuthorization, (req, res, next) => {
-  const product: IRequestProduct = req.body.product;
-  const nProduct = new ProductModel(product);
-  (async () => {
-    try {
-      await dbConnection.connect();
-      const rProduct = await nProduct.save();
-      await dbConnection.disconnect();
-      res.status(200).json(rProduct);
-    } catch (e) {
-      next(e);
-    }
-  })();
-});
+router.post(
+  "/product",
+  checkUserAuthorization,
+  upload.array("images"),
+  (req: any, res, next) => {
+    (async () => {
+      try {
+        const product = await JSON.parse(req.body.product);
+        const nProduct = new ProductModel(product);
+        const token = req.headers.authorization.split(" ")[1];
+        await dbConnection.connect();
+        const rProduct = await nProduct.save();
+        await dbConnection.disconnect();
+        if (req.files && req.files instanceof Array) {
+          awsRequests.addImagesToProduct(nProduct._id, req.files, token);
+        }
+        res.status(200).json({
+          product: rProduct,
+        });
+      } catch (e) {
+        next(e);
+      }
+    })();
+  }
+);
 router.put("/products/:productId", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
@@ -112,10 +123,16 @@ router.post(
   "/products/:productId/images",
   checkUserAuthorization,
   (req, res, next) => {
-    const product: IRequestProduct = req.body.product;
+    console.log(req.body);
+    const images = req.body.file;
+    const token = req.headers.authorization.split(" ")[1];
     (async () => {
       try {
-        await awsRequests.addImagesToProduct(product._id, product.images, req.body.token);
+        await awsRequests.addImagesToProduct(
+          req.params.productId,
+          images,
+          token
+        );
         res.status(200).json({ messege: "OK" });
       } catch (e) {
         next(e);
