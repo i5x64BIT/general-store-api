@@ -21,6 +21,7 @@ const dbConnection = {
   disconnect: async () => {
     await mongoose.disconnect();
     console.log("Disconnected from DB", timeStamp());
+    return;
   },
 };
 

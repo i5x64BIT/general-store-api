@@ -1,7 +1,5 @@
 import express from "express";
-import dbConnection from "../services/db/dbConnection.js";
-import AuthoriseError from "./Errors/AuthoriseError.js";
-import { IProduct, ProductModel } from "../models/ProductModel.js";
+import { ProductModel } from "../models/ProductModel.js";
 import { checkUserAuthorization } from "./helpers.js";
 import awsRequests from "../services/db/awsRequests.js";
 import multer from "multer";
@@ -20,7 +18,6 @@ router.get("/products", (req, res, next) => {
 
   (async () => {
     try {
-      await dbConnection.connect();
       const productRes = await ProductModel.find({})
         .skip(offset)
         .limit(limit)
@@ -31,7 +28,6 @@ router.get("/products", (req, res, next) => {
         const images = await awsRequests.getImagesOfProduct(p._id);
         rProducts.push({ ...p._doc, images });
       }
-      await dbConnection.disconnect();
       res.status(200).json(rProducts);
     } catch (e) {
       next(e);
@@ -47,13 +43,13 @@ router.post(
       try {
         const product = await JSON.parse(req.body.product);
         const nProduct = new ProductModel(product);
-        const token = req.headers.authorization.split(" ")[1];
-        await dbConnection.connect();
         const rProduct = await nProduct.save();
-        await dbConnection.disconnect();
-        if (req.files && req.files instanceof Array) {
-          awsRequests.addImagesToProduct(nProduct._id, req.files, token);
-        }
+        
+        !req.cookies.toekn ? res.status(401).json({
+          messege: "Unauthorized"
+        }): req.files && req.files instanceof Array ?
+          awsRequests.addImagesToProduct(nProduct._id, req.files, req.cookies.token):
+        
         res.status(200).json({
           product: rProduct,
         });
@@ -66,13 +62,11 @@ router.post(
 router.put("/products/:productId", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
-      await dbConnection.connect();
       const rProduct = await ProductModel.findOneAndUpdate(
         { _id: req.params.productId },
         JSON.parse(req.body.product),
         { returnOriginal: false }
       );
-      await dbConnection.disconnect();
       res.status(200).json(rProduct);
     } catch (e) {
       next(e);
@@ -85,9 +79,7 @@ router.delete(
   (req, res, next) => {
     (async () => {
       try {
-        await dbConnection.connect();
         await ProductModel.deleteOne({ _id: req.params.productId });
-        await dbConnection.disconnect();
         res.status(200).json({
           messege: "OK",
         });
@@ -100,9 +92,7 @@ router.delete(
 router.get("/products/:productId", (req, res, next) => {
   (async () => {
     try {
-      await dbConnection.connect();
       const rProduct = await ProductModel.findById(req.params.productId);
-      await dbConnection.disconnect();
       res.status(200).json(rProduct);
     } catch (e) {
       next(e);
@@ -140,33 +130,5 @@ router.post(
     })();
   }
 );
-router.use((e, req, res, next) => {
-  (async () => await dbConnection.disconnect())();
-  console.log(e);
-  if (e.name === "ValidationError") {
-    res.status(400).json({
-      messege: "Bad product parameters, please check your inputs and try again",
-    });
-    return;
-  }
-  if (e.code === 11000) {
-    res.status(400).json({
-      messege: "An item matching those fields already exists.",
-    });
-    return;
-  }
-  if (e instanceof AuthoriseError) {
-    res.status(403).json({
-      messege: "Forbidden",
-    });
-    return;
-  }
-  if (e) {
-    res.status(500).json({
-      messege: "Something went wrong, try again later.",
-    });
-    return;
-  }
-});
 
 export default router;

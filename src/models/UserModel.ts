@@ -16,6 +16,7 @@ interface IUser {
   cart: mongoose.Types.ObjectId;
   isOnMailingList: boolean;
   receipts: mongoose.Types.ObjectId[];
+  refreshToken?: string;
 }
 
 const UserSchema = new mongoose.Schema({
@@ -45,6 +46,7 @@ const UserSchema = new mongoose.Schema({
       type: mongoose.Types.ObjectId,
     },
   ],
+  refreshToken: String,
 });
 
 const UserModel = mongoose.model<IUser>("User", UserSchema);
