@@ -4,10 +4,11 @@ const SupplierSchema = new mongoose.Schema({
   contact: {
     type: mongoose.Types.ObjectId,
     required: true,
+    ref: "User",
   },
   companyName: {
     type: String,
-    required: true
+    required: true,
   },
   description: String,
   contractStart: Date,

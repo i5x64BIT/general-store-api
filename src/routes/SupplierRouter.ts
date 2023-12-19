@@ -6,7 +6,7 @@ const router = express.Router();
 router.get("/suppliers", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
-      const rSuppliers = await SupplierModel.find({});
+      const rSuppliers = await SupplierModel.find({}).populate("contact");
       res.status(200).json({ suppliers: rSuppliers });
     } catch (e) {
       next(e);
