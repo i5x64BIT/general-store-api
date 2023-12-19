@@ -9,11 +9,11 @@ const router = express.Router();
 
 router.get("/products", (req, res, next) => {
   const offset: any = req.query.offset || 0;
-  let limit: any = req.query.limit || 25;
+  let limit: any = req.query.limit || 10;
 
   if (limit > 25) {
     // force a limit if above 25
-    limit = 25;
+    limit = 10;
   }
 
   (async () => {
@@ -44,15 +44,12 @@ router.post(
         const product = await JSON.parse(req.body.product);
         const nProduct = new ProductModel(product);
         const rProduct = await nProduct.save();
-        
-        !req.cookies.toekn ? res.status(401).json({
-          messege: "Unauthorized"
-        }): req.files && req.files instanceof Array ?
-          awsRequests.addImagesToProduct(nProduct._id, req.files, req.cookies.token):
-        
-        res.status(200).json({
-          product: rProduct,
-        });
+        const token = req.headers.authorization?.split(" ")[1];
+        req.files && req.files instanceof Array
+          ? awsRequests.addImagesToProduct(nProduct._id, req.files, token)
+          : res.status(200).json({
+              product: rProduct,
+            });
       } catch (e) {
         next(e);
       }
