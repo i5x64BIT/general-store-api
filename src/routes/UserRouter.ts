@@ -3,7 +3,6 @@ import { UserModel } from "../models/UserModel.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import AuthanticateError from "./Errors/AuthanticateError.js";
 import { checkUserAuthorization } from "./helpers.js";
 import { createToken, deleteToken } from "../services/auth/tokens.js";
 
@@ -16,6 +15,14 @@ const getHashString = async (input: String) => {
   return hash.toString();
 };
 
+router.get("/users", checkUserAuthorization, async (req, res, next) => {
+  try {
+    const users = await UserModel.find({});
+    res.status(200).json(users);
+  } catch (e) {
+    next(e);
+  }
+});
 router.get("/users/:userId", checkUserAuthorization, (req, res, next) => {
   (async () => {
     try {
@@ -23,7 +30,7 @@ router.get("/users/:userId", checkUserAuthorization, (req, res, next) => {
       res.status(200).json(user);
     } catch (e) {
       next(e);
-    } 
+    }
   })();
 });
 router.post("/user", (req, res, next) => {
@@ -70,7 +77,7 @@ router.put("/users/:userId", checkUserAuthorization, (req, res, next) => {
       res.status(200).json({ user, token: createToken(user) });
     } catch (e) {
       next(e);
-    } 
+    }
   })();
 });
 router.delete("/users/:userId", checkUserAuthorization, (req, res, next) => {
@@ -82,7 +89,7 @@ router.delete("/users/:userId", checkUserAuthorization, (req, res, next) => {
       });
     } catch (e) {
       next(e);
-    } 
+    }
   })();
 });
 router.get("/users/:userId/cart", checkUserAuthorization, (req, res, next) => {
@@ -112,7 +119,7 @@ router.put("/users/:userId/cart", checkUserAuthorization, (req, res, next) => {
       });
     } catch (e) {
       next(e);
-    } 
+    }
   })();
 });
 router.delete(
@@ -132,7 +139,7 @@ router.delete(
         });
       } catch (e) {
         next(e);
-      } 
+      }
     };
   }
 );
