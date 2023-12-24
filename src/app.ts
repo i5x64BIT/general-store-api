@@ -30,7 +30,7 @@ app.use(
     origin: ["http://localhost:5173", "http://localhost:3030"],
   })
 );
-dbConnection.connect();
+const dbPromise = dbConnection.connect();
 
 app.use("/api/v1", ProductRouter);
 app.use("/api/v1", UserRouter);
@@ -88,8 +88,13 @@ app.use((e, req, res, next) => {
 const port = parseInt(process.env.PORT) || 8000;
 const host = process.env.HOST || "localhost";
 
-app.listen(port, host, () => {
-  console.log("Listening on port ", host + ":", port);
+dbPromise.then((res) => {
+  // Listen after a connection to the database was established
+  res.ok
+    ? app.listen(port, host, () => {
+        console.log("Listening on port ", host + ":", port);
+      })
+    : console.log(res.error);
 });
 
 process.on("SIGINT", async () => {

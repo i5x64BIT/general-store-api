@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { format } from "date-format-parse";
 
 /**
- * 
+ *
  * @returns Formatted current time
  */
 const timeStamp = () => {
@@ -14,14 +14,19 @@ const dbConnection = {
     try {
       await mongoose.connect(process.env.CONNECTION_STRING);
       console.log("Connected to DB", timeStamp());
-    } catch (e) {
-      console.log(e);
+      return { ok: true };
+    } catch (error) {
+      return { error };
     }
   },
   disconnect: async () => {
-    await mongoose.disconnect();
-    console.log("Disconnected from DB", timeStamp());
-    return;
+    try {
+      await mongoose.disconnect();
+      console.log("Disconnected from DB", timeStamp());
+      return { ok: true };
+    } catch (error) {
+      return { error };
+    }
   },
 };
 

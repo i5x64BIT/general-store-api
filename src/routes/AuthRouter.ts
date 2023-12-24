@@ -14,49 +14,48 @@ const createToken = (payload: any, timeout: string | number = 900) => {
   return token;
 };
 
-router.put("/login", (req, res, next) => {
-  UserModel.findOne({ email: req.body.email }).then((user) => {
-    if (!user) return next(new AuthanticateError());
-    const match = bcrypt.compareSync(req.body.password, user.password);
-    if (!match) {
-      return next(new AuthanticateError());
-    }
-    const { _id, email, role, address, phone_num, cart, receipts } = user;
-    const accessToken = createToken(
-      {
-        _id,
-        role,
-      },
-      "10m"
-    );
-    const refreshToken = createToken(
-      {
-        _id,
-        role,
-      },
-      "1d"
-    );
-    user.refreshToken = refreshToken;
-    user.save();
-    res.cookie("token", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 1000 * 60 * 60 * 24,
-    });
-    res.status(200).json({
-      messege: "OK",
-      token: accessToken,
-      user: JSON.stringify({
-        _id,
-        email,
-        role,
-        address,
-        phone_num,
-        cart,
-        receipts,
-      }),
-    });
+router.put("/login", async (req, res, next) => {
+  const user = await UserModel.findOne({ email: req.body.email });
+  if (!user) return next(new AuthanticateError());
+
+  const match = bcrypt.compareSync(req.body.password, user.password);
+  if (!match) return next(new AuthanticateError());
+
+  const { _id, email, role, address, phone_num, cart, receipts } = user;
+  const accessToken = createToken(
+    {
+      _id,
+      role,
+    },
+    "10m"
+  );
+  const refreshToken = createToken(
+    {
+      _id,
+      role,
+    },
+    "1d"
+  );
+  user.refreshToken = refreshToken;
+  user.save();
+  res.cookie("token", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 1000 * 60 * 60 * 24,
+  });
+  res.status(200).json({
+    messege: "OK",
+    token: accessToken,
+    user: JSON.stringify({
+      _id,
+      email,
+      role,
+      address,
+      phone_num,
+      cart,
+      receipts,
+    }),
   });
 });
 router.put("/refresh", async (req, res, next) => {
