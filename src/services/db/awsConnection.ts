@@ -1,7 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
-import Jwt from "jsonwebtoken";
-import { ERoles, IUser } from "../../models/UserModel.js";
+import { ERoles } from "../../models/UserModel.js";
 
 const client = new STSClient({
   region: process.env.AWS_REGION,
@@ -11,19 +10,16 @@ const client = new STSClient({
   },
 });
 
-const connect: (token?: string) => Promise<S3Client> = async (token?) => {
+const connect = async (role? : ERoles) => {
   const REGION = "eu-north-1";
   enum EArnBasedOnRole {
     admin = "arn:aws:iam::963690327512:role/generalstore.com-moderator",
     user = "arn:aws:iam::963690327512:role/generalstore.com-user",
   }
   let arn = EArnBasedOnRole.user;
-  if (token) {
-    const payload = Jwt.verify(token, process.env.TOKEN_SECRET);
-    if (!payload) throw new Error("No access");
-    if (payload && typeof payload !== "string") {
-      if (payload.role === ERoles.admin) arn = EArnBasedOnRole.admin;
-    }
+  switch (role) {
+    case ERoles.admin:
+      arn = EArnBasedOnRole.admin;
   }
   const command = new AssumeRoleCommand({
     RoleArn: arn,

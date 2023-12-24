@@ -1,59 +1,61 @@
 import express from "express";
 import { ProductModel } from "../models/ProductModel.js";
 import { checkUserAuthorization } from "./helpers.js";
-import awsRequests from "../services/db/awsRequests.js";
+import awsProducts from "../services/db/awsProducts.js";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
-router.get("/products", (req, res, next) => {
-  const offset: any = req.query.offset || 0;
-  let limit: any = req.query.limit || 10;
+router.get("/products", async (req, res, next) => {
+  const qOffset = req.query.offset || "0";
+  const qLimit = req.query.limit || "10";
+  if (typeof qOffset === "string" && typeof qLimit === "string") {
+    const offset = parseInt(qOffset) || 0;
+    let limit = parseInt(qLimit) || 10;
 
-  if (limit > 25) {
-    // force a limit if above 25
-    limit = 10;
-  }
+    limit > 10 && (limit = 10); // Force a limit of 10 items
 
-  (async () => {
     try {
       const productRes = await ProductModel.find({})
         .skip(offset)
         .limit(limit)
         .populate("supplier");
-      const data: any = Array.from(productRes);
+
       const rProducts = [];
-      for (let p of data) {
-        const images = await awsRequests.getImagesOfProduct(p._id);
-        rProducts.push({ ...p._doc, images });
+      for (let p of productRes) {
+        const images = await awsProducts.getImageUrls(p._id.toString());
+        rProducts.push({ ...p.toObject(), images });
       }
       res.status(200).json(rProducts);
     } catch (e) {
       next(e);
     }
-  })();
+  }
 });
 router.post(
   "/product",
   checkUserAuthorization,
   upload.array("images"),
-  (req: any, res, next) => {
-    (async () => {
+  async (req: any, res, next) => {
+    {
       try {
         const product = await JSON.parse(req.body.product);
         const nProduct = new ProductModel(product);
         const rProduct = await nProduct.save();
-        const token = req.headers.authorization?.split(" ")[1];
-        req.files && req.files instanceof Array
-          ? awsRequests.addImagesToProduct(nProduct._id, req.files, token)
-          : res.status(200).json({
-              product: rProduct,
-            });
+
+        if (req.files && req.files instanceof Array) {
+          for (let p of req.files) {
+            awsProducts.uploadImage(nProduct._id.toString(), p);
+          }
+        } else
+          res.status(200).json({
+            product: rProduct.toObject(),
+          });
       } catch (e) {
         next(e);
       }
-    })();
+    }
   }
 );
 router.put("/products/:productId", checkUserAuthorization, (req, res, next) => {
@@ -96,35 +98,30 @@ router.get("/products/:productId", (req, res, next) => {
     }
   })();
 });
-router.get("/products/:productId/images", (req, res, next) => {
-  (async () => {
-    try {
-      const urls = await awsRequests.getImagesOfProduct(req.params.productId);
-      res.status(200).json(urls);
-    } catch (e) {
-      next(e);
-    }
-  })();
+router.get("/products/:productId/images", async (req, res, next) => {
+  try {
+    const urls = await awsProducts.getImageUrls(req.params.productId);
+    res.status(200).json(urls);
+  } catch (e) {
+    next(e);
+  }
 });
 router.post(
   "/products/:productId/images",
   checkUserAuthorization,
-  (req, res, next) => {
-    console.log(req.body);
-    const images = req.body.file;
-    const token = req.headers.authorization.split(" ")[1];
-    (async () => {
-      try {
-        await awsRequests.addImagesToProduct(
-          req.params.productId,
-          images,
-          token
-        );
-        res.status(200).json({ messege: "OK" });
-      } catch (e) {
-        next(e);
+  upload.array("images"),
+  async (req, res, next) => {
+    const images = req.files;
+    if (images instanceof Array) {
+      for (let i of images) {
+        try {
+          const url = await awsProducts.uploadImage(req.params.productId, i);
+          res.status(200).send(url);
+        } catch (e) {
+          next(e);
+        }
       }
-    })();
+    }
   }
 );
 
