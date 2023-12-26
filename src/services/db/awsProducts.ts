@@ -44,32 +44,21 @@ const getImageUrls = async (productId: string) => {
 
 const uploadImage = async (productId: string, image: Express.Multer.File) => {
   const client = await awsConnection.connect(ERoles.admin);
-
-  const uploadedImages =
-    (
-      await client.send(
-        new ListObjectsCommand({
-          Bucket: BUCKET,
-          Prefix: getPath(productId),
-          Delimiter: "/",
-        })
-      )
-    )?.Contents || [];
+  const fileName = Date.now();
 
   await client.send(
     new PutObjectCommand({
       Bucket: BUCKET,
       Body: image.buffer,
-      Key: getPath(productId) + uploadedImages.length,
+      Key: getPath(productId) + fileName,
       ContentType: image.mimetype,
     })
   );
-
   return await getSignedUrl(
     client,
     new GetObjectCommand({
       Bucket: BUCKET,
-      Key: getPath(productId) + uploadedImages.length,
+      Key: getPath(productId) + fileName,
     })
   );
 };

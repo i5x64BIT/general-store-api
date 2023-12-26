@@ -107,20 +107,17 @@ router.get("/products/:productId/images", async (req, res, next) => {
   }
 });
 router.post(
-  "/products/:productId/images",
+  "/products/:productId/image",
   checkUserAuthorization,
-  upload.array("images"),
-  async (req, res, next) => {
-    const images = req.files;
-    if (images instanceof Array) {
-      for (let i of images) {
-        try {
-          const url = await awsProducts.uploadImage(req.params.productId, i);
-          res.status(200).send(url);
-        } catch (e) {
-          next(e);
-        }
-      }
+  upload.single("image"),
+  (req, res, next) => {
+    const image = req.file;
+    try {
+      awsProducts
+        .uploadImage(req.params.productId, image)
+        .then((url) => res.status(200).send(url));
+    } catch (e) {
+      next(e);
     }
   }
 );
