@@ -121,5 +121,21 @@ router.post(
     }
   }
 );
+router.delete(
+  "/products/:productId/image/:imageIndex",
+  checkUserAuthorization,
+  (req, res, next) => {
+    awsProducts.getImageNames(req.params.productId).then((images) => {
+      const imageKey = images[req.params.imageIndex].Key;
+      try {
+        awsProducts
+          .deleteImage(req.params.productId, imageKey)
+          .then((r) => (r.ok ? res.status(200).send() : next(r.messege)));
+      } catch (e) {
+        next(e);
+      }
+    });
+  }
+);
 
 export default router;

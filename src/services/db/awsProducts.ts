@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   ListObjectsCommand,
   PutObjectCommand,
@@ -13,10 +14,10 @@ const getPath = (productId: string) => {
   return S3_PRODUCT_DIR + productId + "/";
 };
 
-const getImageUrls = async (productId: string) => {
+const getImageNames = async (productId: string) => {
   const client = await awsConnection.connect();
 
-  const images = (
+  return (
     await client.send(
       new ListObjectsCommand({
         Bucket: BUCKET,
@@ -24,7 +25,12 @@ const getImageUrls = async (productId: string) => {
         Delimiter: "/",
       })
     )
-  )?.Contents;
+  ).Contents;
+};
+const getImageUrls = async (productId: string) => {
+  const client = await awsConnection.connect();
+
+  const images = await getImageNames(productId);
 
   const urls: string[] = [];
   if (images) {
@@ -62,5 +68,26 @@ const uploadImage = async (productId: string, image: Express.Multer.File) => {
     })
   );
 };
+const deleteImage = async (productId: string, imageKey: string) => {
+  try {
+    const client = await awsConnection.connect(ERoles.admin);
+    const res = await client.send(
+      new DeleteObjectCommand({
+        Bucket: BUCKET,
+        Key: imageKey,
+      })
+    );
+    return res.$metadata.httpStatusCode === 204
+      ? { ok: true }
+      : {
+          messege:
+            "DeleteImageError: Could not delete image, code: " +
+            res.$metadata.httpStatusCode,
+        };
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
 
-export default { getImageUrls, uploadImage };
+export default { getImageNames, getImageUrls, uploadImage, deleteImage };
